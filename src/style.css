@@ -1,0 +1,25 @@
+@import 'tailwindcss';
+
+html {
+  font-family: 'Inria Serif', serif;
+}
+
+:root {
+  /* Typography */
+  --font-ui: 'Inria Serif', serif;
+  --font-logo: 'Italiana', serif;
+
+  /* Color palette */
+  --color-surface: #eaf7f8; 
+  --color-light: #94DDDF;
+  --color-primary: #05B8C0;
+  --color-icon: #d9e8e9;
+  --color-dark: #003132;
+  --color-text-dark: #003132;
+  --color-text-light: #ffffff;
+
+  /* Shadows */
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-row: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
