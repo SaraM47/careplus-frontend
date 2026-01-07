@@ -6,6 +6,10 @@ import { useToastStore } from "@/stores/toast.store"
 const TOKEN_KEY = "inv_token";
 const USER_KEY = "inv_user";
 
+// Retry configuration
+const MAX_RETRIES = 3;        // max 3 attempts
+const RETRY_DELAY_MS = 6000;  // waits 6 seconds between retries
+
 // Auth store definition 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
@@ -25,55 +29,71 @@ export const useAuthStore = defineStore("auth", {
 
   // Actions for login, registration, and logout
   actions: {
-    // Login action
+
+    // Login action with automatic retry for Render cold-start
     async login(email, password) {
       this.loading = true;
       this.error = "";
-      this.startingBackend = false; 
+      this.startingBackend = false;
 
-      // Timer to detect slow backend / cold start
+      let attempt = 0;
+
+      // Show "starting server" text if login takes long
       const slowTimer = setTimeout(() => {
         if (this.loading) {
           this.startingBackend = true;
         }
-      }, 5000); // 5 seconds
+      }, 5000);
 
-      // Try to login via API
       try {
-        const res = await authApi.login({ email, password });
+        while (attempt < MAX_RETRIES) {
+          try {
+            const res = await authApi.login({ email, password });
 
-        // Store token and user in state
-        this.token = res.token;
-        this.user = res.user;
+            // SUCCESS
+            this.token = res.token;
+            this.user = res.user;
 
-        // Save token and user in sessionStorage
-        sessionStorage.setItem(TOKEN_KEY, res.token);
-        sessionStorage.setItem(USER_KEY, JSON.stringify(res.user));
+            sessionStorage.setItem(TOKEN_KEY, res.token);
+            sessionStorage.setItem(USER_KEY, JSON.stringify(res.user));
 
-      } catch (err) {
+            return; // stop retry loop
 
-        // Timeout for Render cold , backend vaknar
-        if (err.code === "ECONNABORTED") {
-          this.error = "";
-          this.startingBackend = true;
+          } catch (err) {
+            attempt++;
+
+            // Retry only on timeout / backend not responding
+            if (err.code === "ECONNABORTED" && attempt < MAX_RETRIES) {
+              this.startingBackend = true;
+
+              // Wait before retrying
+              await new Promise((resolve) =>
+                setTimeout(resolve, RETRY_DELAY_MS)
+              );
+
+              continue;
+            }
+
+            // Wrong credentials – no retry
+            if (err.response?.status === 401) {
+              this.error = "Felaktiga inloggningsuppgifter";
+              throw err;
+            }
+
+            // Other unexpected errors
+            this.error = "Ett oväntat fel inträffade";
+            throw err;
+          }
         }
 
-        // Wrong credentials
-        else if (err.response?.status === 401) {
-          this.error = "Incorrect login details";
-        }
-
-        // Other unexpected errors
-        else {
-          this.error = "An unexpected error occurred.";
-        }
-
-        throw err;
+        // If all retries failed
+        this.error = "Servern svarar inte. Försök igen om en stund.";
+        throw new Error("Login failed after retries");
 
       } finally {
-        clearTimeout(slowTimer); // stop timer so it doesn't hang
+        clearTimeout(slowTimer);
         this.loading = false;
-        this.startingBackend = false; // close text when done
+        this.startingBackend = false;
       }
     },
 
