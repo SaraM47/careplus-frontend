@@ -13,6 +13,8 @@ export const useAuthStore = defineStore("auth", {
     user: JSON.parse(sessionStorage.getItem(USER_KEY) || "null"),
     loading: false,
     error: "",
+    // Indicate to Render cold-start
+    startingBackend: false,
   }),
 
   // Getters to check authentication and admin status
@@ -27,6 +29,7 @@ export const useAuthStore = defineStore("auth", {
     async login(email, password) {
       this.loading = true
       this.error = ""
+      this.startingBackend = false   // reset vid nytt försök
   
       // Try to login via API
       try {
@@ -39,15 +42,27 @@ export const useAuthStore = defineStore("auth", {
         // Save token and user in sessionStorage
         sessionStorage.setItem(TOKEN_KEY, res.token)
         sessionStorage.setItem(USER_KEY, JSON.stringify(res.user))
+
       } catch (err) {
+
+        // Timeout for Render cold , backend vaknar
         if (err.code === "ECONNABORTED") {
-          this.error = "Servern svarar inte"
-        } else if (err.response?.status === 401) {
+          this.error = ""                
+          this.startingBackend = true     
+        }
+
+        // Wrong credentials
+        else if (err.response?.status === 401) {
           this.error = "Felaktiga inloggningsuppgifter"
-        } else {
+        }
+
+        // Other unnexpected errors
+        else {
           this.error = "Ett oväntat fel inträffade"
         }
+
         throw err
+
       } finally {
         this.loading = false
       }
