@@ -97,37 +97,47 @@ export const useAuthStore = defineStore("auth", {
       }
     },
 
-    // Register new user and show feedback via toast
-    async register(email, password) {
-      const toast = useToastStore();
+// Register new user and show feedback via toast
+async register(email, password) {
+  const toast = useToastStore();
 
-      // Set loading state
-      this.loading = true;
-      this.error = "";
+  // Set loading state
+  this.loading = true;
+  this.error = "";
 
-      // Try to register via API
-      try {
-        const res = await authApi.register({ email, password });
+  // Try to register via API
+  try {
+    const res = await authApi.register({ email, password });
 
-        this.token = res.token;
-        this.user = res.user;
+    this.token = res.token;
+    this.user = res.user;
 
-        // Save token and user in sessionStorage
-        sessionStorage.setItem(TOKEN_KEY, res.token);
-        sessionStorage.setItem(USER_KEY, JSON.stringify(res.user));
+    // Save token and user in sessionStorage
+    sessionStorage.setItem(TOKEN_KEY, res.token);
+    sessionStorage.setItem(USER_KEY, JSON.stringify(res.user));
 
-        toast.success("Account created successfully");
+    toast.success("Account created successfully");
 
-      // Handle errors  
-      } catch (err) {
-        this.error = "Kunde inte skapa konto";
-        toast.error("Failed to create account");
-        throw err;
+  // Handle errors  
+  } catch (err) {
 
-      } finally {
-        this.loading = false;
-      }
-    },
+    // Email already exists (HTTP 409 Conflict)
+    if (err.response?.status === 409) {
+      this.error = "An account with this email already exists";
+      toast.error("This email address is already registered");
+    } else {
+      // Fallback for unexpected errors
+      this.error = "Failed to create account";
+      toast.error("Something went wrong while creating the account");
+    }
+
+    throw err;
+
+  } finally {
+    this.loading = false;
+  }
+},
+
 
     // Clear auth state and sessionStorage on logout
     logout() {
