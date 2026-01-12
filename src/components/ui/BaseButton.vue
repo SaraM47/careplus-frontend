@@ -7,6 +7,7 @@
         inline-flex items-center gap-2
         px-6 py-2
         rounded-full
+        cursor-pointer
         bg-[#94DDDF]
         border-2 border-[#05B8C0]
         text-[#003132]
