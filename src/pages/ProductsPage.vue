@@ -1,11 +1,14 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div>
+    <div class="flex items-center gap-10">
       <h1 class="text-3xl font-bold">Inventory</h1>
-      <h2 class="text-2xl my-8 -mb-5">Search</h2>
+      <span v-if="roleLabel" class="text-sm px-3 py-1 rounded-full border bg-(--color-surface) var(--color-text-dark)">
+        Logged in as: <strong>{{ roleLabel }}</strong>
+      </span>
     </div>
 
+    <h2 class="text-2xl my-8 -mb-5">Search</h2>
     <!-- Toolbar -->
     <div class="flex flex-col md:flex-row gap-4 my-10">
       <!-- Search -->
@@ -260,7 +263,7 @@
 </template>
 
 <script setup>
-// Vue imports 
+// Vue imports
 import { computed, onMounted, ref, watch } from 'vue'
 
 import { useProductsStore } from '@/stores/products.store'
@@ -293,6 +296,12 @@ const modalMode = ref('create') // create | edit | view
 // Permission helpers
 const isAdmin = computed(() => auth.user?.role === 'admin')
 const canAdjustStock = computed(() => auth.user?.role === 'admin' || auth.user?.role === 'staff')
+
+// User role label for display if logged in as admin or staff
+const roleLabel = computed(() => {
+  if (!auth.user?.role) return ''
+  return auth.user.role === 'admin' ? 'Admin' : 'Staff'
+})
 
 // Debounced search triggers list fetch
 const qRef = computed(() => products.query.q)
