@@ -45,7 +45,7 @@
 
         <button
           type="button"
-          class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600"
+          class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 cursor-pointer hover:text-black"
           @click="showPassword = !showPassword"
           :aria-label="showPassword ? 'Hide password' : 'Show password'"
         >
@@ -88,6 +88,7 @@
 </template>
 
 <script setup>
+import { watch } from 'vue'
 import { reactive, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
@@ -97,6 +98,15 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
+
+// Clear auth error on input change
+watch(email, () => {
+  auth.error = ''
+})
+
+watch(password, () => {
+  auth.error = ''
+})
 
 // Validation errors
 const errors = reactive({
